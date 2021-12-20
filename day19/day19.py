@@ -2,6 +2,7 @@ import sys
 import numpy as np
 from collections import Counter
 from itertools import chain
+from scipy.spatial.distance import cdist
 import pprint
 pprint = pprint.pprint
 
@@ -46,9 +47,9 @@ def scanner_pairs(scan_dists):
     pairs = []
     for i, scan1_dist in enumerate(scan_dists):
         for j, scan2_dist in enumerate(scan_dists):
-            if {i, j} not in pairs:
+            if {i, j} not in pairs and i != j:
                 common_dists = common_distances(scan1_dist, scan2_dist)
-                if len(common_dists) == 66:
+                if len(common_dists) >= 66:
                     pairs.append({i, j})
     return pairs
 
@@ -94,72 +95,36 @@ def main():
     base_rot, base_inv, base_coords = base_scan_coords(
                 base, scanners[base_scan], base_dist, scan_dists[base_scan]
                 )
-    coord_dict[base_scan] = ('base', base_coords, base_rot, base_inv)
+    coord_dict[base_scan] = base_coords
+    scanners[base_scan] = scanners[base_scan][:, base_rot]
+    scanners[base_scan] = base_coords - np.multiply(scanners[base_scan], base_inv)
     while len(coord_dict) < len(scanners)-1:
         for s1, s2 in scan_pairs:
             if s1 in coord_dict and s2 not in coord_dict:
-                print(s1, s2)
                 rot, inv, coords = base_scan_coords(
                         scanners[s1], scanners[s2], scan_dists[s1], scan_dists[s2]  # noqa: E501
                         )
-                coord_dict[s2] = (s1, coords, rot, inv)
-                print(coords)
+                coord_dict[s2] = coords
+                scanners[s2] = scanners[s2][:, rot]
+                scanners[s2] = coords - np.multiply(scanners[s2], inv)
             elif s2 in coord_dict and s1 not in coord_dict:
-                print(s2, s1)
                 rot, inv, coords = base_scan_coords(
                         scanners[s2], scanners[s1], scan_dists[s2], scan_dists[s1]  # noqa: E501
                         )
-                coord_dict[s1] = (s2, coords, rot, inv)
-                print(coords)
+                coord_dict[s1] = coords
+                scanners[s1] = scanners[s1][:, rot]
+                scanners[s1] = coords - np.multiply(scanners[s1], inv)
     pprint(coord_dict)
-    converted = {base_scan}
-    while len(converted) < len(scanners):
-        for s2, (s1, coords, rot, inv) in coord_dict.items():
-            if s1 in converted and s2 not in converted:
-                inv_coords = coord_dict[s1][3] * coords
-                rot_coords = inv_coords[coord_dict[s1][2]]
-                new_coords = coord_dict[s1][1] - rot_coords
-                coord_dict[s2] = (s1, new_coords, rot, inv)
-                converted.add(s2)
     print()
-    pprint(coord_dict)
-    # beacons_based = base.copy()
-    # beacons_based = np.r_[beacons_based, (np.multiply(
-    #     scanners[0], coord_dict[0][3]*-1) + coord_dict[0][1])]
-    # beacons_based = np.r_[beacons_based, (
-    #     )]
-    # print(np.sort(beacons_based, axis=0))
-    # scan0_based = (np.multiply(scanners[0], coord_dict[0][3]*-1)) + coord_dict[0][1]
-    scan0_based = coord_dict[0][1] - (np.multiply(scanners[0], coord_dict[0][3]))
-    # print(scan0_based[np.argsort(scan0_based[:,0])])
-    # print(scan0_based)
-    # print(scanners[0])
-    # scan3_based = (np.multiply(scanners[2], coord_dict[0][3]*-1)) + coord_dict[2][1]
-    scan3_based = coord_dict[2][1] - (np.multiply(scanners[2], coord_dict[0][3]))
-    # print(scan3_based[np.argsort(scan3_based[:,0])])
-    # scan4_based = (np.multiply(scanners[3], coord_dict[0][3]*-1)) + coord_dict[3][1]
-    # scan4_based = coord_dict[3][1] - (np.multiply(scanners[3], coord_dict[0][3]))
-    # print(scan4_based[np.argsort(scan4_based[:,0])])
-
-    # SCAN 4
-    scan4 = scanners[3]
-    scan4 = scan4[:, coord_dict[0][2]]
-    scan4 = np.multiply(scan4, coord_dict[0][3])
-    scan4 = scan4[:, coord_dict[3][2]]
-    scan4 = np.multiply(scan4, coord_dict[3][3][coord_dict[3][2]] * coord_dict[0][3][coord_dict[3][2]])
-    scan4_based = coord_dict[3][1] - scan4
-    print(scan4_based[np.argsort(scan4_based[:, 0])])
-
-    # SCAN 2
-    scan2 = scanners[2]
-    scan2 = scan2[:, coord_dict[0][2]]
-    scan2 = np.multiply(scan2, coord_dict[0][3])
-    scan2 = scan2[:, coord_dict[3][2]]
-    scan2 = np.multiply(scan2, coord_dict[3][3][coord_dict[3][2]] * coord_dict[0][3][coord_dict[3][2]])
-    scan2 = scan2[:, coord_dict[2][2]]
-    scan2 = np.multiply(scan2, coord_dict[2][3][coord_dict[3][2]][coord_dict[2][2]] * coord_dict[0][3][coord_dict[3][2]][coord_dict[2][2]] * coord_dict[3][3][coord_dict[3][2]][coord_dict[2][2]])
-    scan2_based = coord_dict[2][1] - scan2
-    print(scan2_based[np.argsort(scan2_based[:, 0])])
+    beacons_based = base.copy()
+    for scanner in scanners:
+        beacons_based = np.r_[beacons_based, scanner]
+    print(len(np.unique(beacons_based, axis=0)))
+    manhat_dists = set()
+    for s1, c1 in coord_dict.items():
+        for s2, c2 in coord_dict.items():
+            manhat_dists.add(np.sum(cdist(c1.reshape((1,3)), c2.reshape((1,3)), metric='cityblock')))
+    print(max(manhat_dists))
 
 
 if __name__ == "__main__":
