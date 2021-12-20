@@ -3,6 +3,7 @@ import numpy as np
 from collections import Counter
 from itertools import chain
 from scipy.spatial.distance import cdist
+from time import perf_counter
 import pprint
 pprint = pprint.pprint
 
@@ -85,6 +86,7 @@ def base_scan_coords(base, scan, base_dist, scan_dist):
 
 
 def main():
+    start = perf_counter()
     scanners = read_input(sys.stdin)
     base, scanners = scanners[0], scanners[1:]
     base_dist = dist_dict(base)
@@ -125,6 +127,8 @@ def main():
         for s2, c2 in coord_dict.items():
             manhat_dists.add(np.sum(cdist(c1.reshape((1,3)), c2.reshape((1,3)), metric='cityblock')))
     print(max(manhat_dists))
+    end = perf_counter()
+    print("Execution time: ", end-start)
 
 
 if __name__ == "__main__":
