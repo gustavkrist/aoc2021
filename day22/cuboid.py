@@ -1,14 +1,10 @@
 import sys
-from progressbar import ProgressBar, Bar, Percentage, ETA, FileTransferSpeed
 from time import perf_counter
-widgets = [Percentage(), ' ', Bar('-'), ' ', ETA(), ' ', FileTransferSpeed()]
-pbar = ProgressBar(widgets=widgets)
 
 
 def isplane(range):
     xr, yr, zr = range
     if (xr[0] > xr[1] or yr[0] > yr[1] or zr[0] > zr[1]):
-            # or xr[0] == xr[1] or yr[0] == yr[1] or zr[0] == zr[1]):
         return True
 
 
@@ -77,23 +73,9 @@ class Cuboid:
                 r6 = ((xr[1]+1, x2), yr, zr)
                 if not isplane(r6):
                     new_ranges.append(r6)
-                # print(ran)
-                # print(other.ranges[0])
-                # print(xr, yr, zr)
-                # print(new_ranges)
-                # print()
             else:
                 new_ranges.append(ran)
         self.ranges = new_ranges
-
-    def __len__(self):
-        return self.on
-
-    def __repr__(self):
-        return str(self.on)
-
-    def __str__(self):
-        return str(self.on)
 
     def __int__(self):
         return self.on
