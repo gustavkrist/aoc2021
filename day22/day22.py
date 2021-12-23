@@ -44,7 +44,7 @@ def main():
         eng = op(eng, range)
     uni, counts = np.unique(eng, return_counts=True)
     print(int(counts[np.where(uni == 1)]))
-    print(mac-mic)
+    # print(mac-mic)
 
 
 if __name__ == '__main__':
