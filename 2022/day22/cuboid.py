@@ -80,6 +80,7 @@ class Cuboid:
     def __int__(self):
         return self.on
 
+
 start = perf_counter()
 cubes = []
 lines = sys.stdin.read().split('\n')
